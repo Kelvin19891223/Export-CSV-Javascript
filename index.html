@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+		<meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+        <title>WireFrame</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+        <meta name="description" content="Fullscreen Slit Slider with CSS3 and jQuery" />
+        <meta name="keywords" content="slit slider, plugin, css3, transitions, jquery, fullscreen, autoplay" />
+        <meta name="author" content="Codrops" />
+        <!-- <link rel="shortcut icon" href="../favicon.ico">  -->
+        <link rel="stylesheet" type="text/css" href="css/style.css" />
+        <link rel="stylesheet" type="text/css" href="css/custom.css" />
+		<script type="text/javascript" src="js/modernizr.custom.79639.js"></script>
+		<noscript>
+			<link rel="stylesheet" type="text/css" href="css/styleNoJS.css" />
+		</noscript>
+    </head>
+    <body>
+        <div class="container demo-1" style="background: #a5a5a5">
+            <div id="slider" class="sl-slider-wrapper">
+				<div class="sl-slider">
+				
+					<div class="sl-slide bg-1" data-orientation="vertical" data-slice1-rotation="0" data-slice2-rotation="0" data-slice1-scale="0" data-slice2-scale="0">
+						<div class="sl-slide-inner">
+							<input id="first-next-btn" type="button" value="Create new plist" style="position:absolute; left: 40%; top: 40%; width: 30%; height: 30%;background: #70ad47; border: 1px solid #548038; color: #fff; font-size: 25px;"/>
+						</div>
+					</div>
+					
+					<div class="sl-slide bg-2" data-orientation="vertical" data-slice1-rotation="10" data-slice2-rotation="-15" data-slice1-scale="1.5" data-slice2-scale="1.5">
+						<div class="sl-slide-inner">
+							<div class="problem-body">
+								<div class="problem-title">
+									<input type="button" value="Creating new plist"/>
+								</div>
+								<div class="body">
+									<div class="titlediv">
+										<div class="selector-title">How many overlay graphics do you want to setup?</div>
+										<div><input type="text" value="" id="problem-count"/></div>
+									</div>
+									
+								</div>
+								
+								<div class="footer">
+									<div class="prev nav-arrow-prev">
+										<input type="button" value="Back" class="button"/>
+									</div>
+									<div id="create-page" class="prev">
+										<input type="button" value="Next" class="button"/>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>										
+					
+									
+				</div>				
+			</div>
+		</div>
+		
+		<script type="text/javascript" src="js/jquery.min.js"></script>
+		<script type="text/javascript" src="js/jquery.ba-cond.min.js"></script>
+		<script type="text/javascript" src="js/jquery.slitslider.js"></script>
+		<script type="text/javascript">	
+		var optionValue = []
+		function formatXml(xml) {
+			var formatted = '';
+			var reg = /(>)(<)(\/*)/g;
+			xml = xml.replace(reg, '$1\r\n$2$3');
+			var pad = 0;
+			jQuery.each(xml.split('\r\n'), function(index, node) {
+				var indent = 0;
+				if (node.match( /.+<\/\w[^>]*>$/ )) {
+					indent = 0;
+				} else if (node.match( /^<\/\w/ )) {
+					if (pad != 0) {
+						pad -= 1;
+					}
+				} else if (node.match( /^<\w[^>]*[^\/]>.*$/ )) {
+					indent = 1;
+				} else {
+					indent = 0;
+				}
+
+				var padding = '';
+				for (var i = 0; i < pad; i++) {
+					padding += '  ';
+				}
+
+				formatted += padding + node + '\r\n';
+				pad += indent;
+			});
+
+			return formatted;
+		}
+
+		//Get the Transform data
+		function getTransformData(val)
+		{
+			var result = [];
+			if(val == null || val.length == 0)
+				return result;
+			var array = val.split('\n');
+
+			var startLine = -1;
+			var endLine = array.length-1;
+			for(var i=0; i<array.length; i++)
+			{				
+				var line = array[i].split('	')
+				if(line[0].toLowerCase() == "transform" && line[1].toLowerCase() == "position") {
+					startLine = (i+2);
+					break;
+				}					
+			}
+
+			if(startLine != -1)
+			{
+				for(var i=startLine; i<array.length; i++)
+				{				
+					var line = array[i].split('	')
+					if(line[0].toLowerCase() == "transform" && line[1].toLowerCase() == "rotation") {
+						endLine = i;
+						break;
+					}					
+				}
+			}
+
+			if(startLine != -1)
+			{
+				for(var i=startLine; i<endLine; i++)
+				{
+					var line = array[i].split('	')
+					var items = []
+					for(var k=0; k<line.length; k++) {
+						if(line[k] != "")
+							items.push(line[k])
+					}
+
+					if(items.length == 4)
+						result.push(items);
+				}
+			}			
+			return result;
+		}
+		
+		//Rotation
+		function getRotationData(val)
+		{
+			var result = [];
+			if(val == null || val.length == 0)
+				return result;
+			var array = val.split('\n');
+
+			var startLine = -1;
+			var endLine = array.length-1;
+			for(var i=0; i<array.length; i++)
+			{				
+				var line = array[i].split('	')
+				if(line[0].toLowerCase() == "transform" && line[1].toLowerCase() == "rotation") {
+					startLine = (i+2);
+					break;
+				}					
+			}
+
+			if(startLine != -1)
+			{
+				for(var i=startLine; i<array.length; i++)
+				{				
+					var line = array[i].split('	')
+					if(array[i].toLowerCase().indexOf('end of') > -1) {
+					//if(line[0].toLowerCase() == "end" && line[1].toLowerCase() == "of") {
+						endLine = i;
+						break;
+					}					
+				}
+			}
+
+			if(startLine != -1)
+			{
+				for(var i=startLine; i<endLine; i++)
+				{
+					var line = array[i].split('	')
+					var items = []
+					for(var k=0; k<line.length; k++) {
+						if(line[k] != "")
+							items.push(line[k])
+					}
+					if(items.length == 2)
+						result.push(items);
+				}
+			}			
+			return result;
+		}
+
+		function getRotateIndex(rotate, value)
+		{
+			var result = "";
+			for(var i=0; i<rotate.length; i++) {
+				if(rotate[i][0] == value) {
+					result = rotate[i][1];
+					break;
+				}
+			}
+			return result;
+		}
+
+		function getCornerData(val)
+		{
+			var result = [];
+			if(val == null || val.length == 0)
+				return result;
+			var array = val.split('\n');
+
+			var startLine = [];
+			var endLine = [];
+			
+			for(var i=0; i<array.length; i++)
+			{				
+				var line = array[i].split('	')
+				if(line[0].toLowerCase() == "effects" && line[1].toLowerCase().indexOf("corner")>-1) {
+					startLine.push(i+2);
+				} 
+				if((line[0].toLowerCase() == "effects" && line[1].toLowerCase().indexOf("corner")>-1) || (array[i].toLowerCase().indexOf('end of keyframe')> -1)){
+					endLine.push(i);
+				}				
+			}
+
+			if(startLine.length != 4 || endLine.length != 5)
+				return result;
+
+			for(var j=0; j<4; j++)
+			{
+				var subResult = [];
+				for(var i=startLine[j]; i<endLine[j+1]; i++)
+				{
+					var line = array[i].split('	')
+					var items = []
+					for(var k=0; k<line.length; k++) {
+						if(line[k] != "")
+							items.push(line[k])
+					}
+					if(items.length != 0)
+						subResult.push(items);
+				}
+				result.push(subResult);
+			}			
+			return result;
+		}
+
+		function download(filename, text) {
+			var element = document.createElement('a');
+			element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+			element.setAttribute('download', filename);
+
+			element.style.display = 'none';
+			document.body.appendChild(element);
+
+			element.click();
+
+			document.body.removeChild(element);
+		}
+
+		function isExistTransform(list, value)
+		{			
+			for(var i=0; i<list.length; i++)
+			{
+				if(list[i][0] == value)
+					return true;
+			}
+			return false;
+		}
+
+		function getCornerSubData(list,value)
+		{
+			for(var i=0; i<list.length; i++)
+			{
+				if(list[i][0] == value)
+					return list[i];
+			}
+			return null;
+		}
+			$(function() {
+				getResult = (function() {
+					var title = $('.sl-slide.bg-3.sl-slide-vertical .body input.label');
+					var type = $('.sl-slide.bg-3.sl-slide-vertical .body input.radio');
+					var data = $('.sl-slide.bg-3.sl-slide-vertical .textarea').slice(0,title.length)
+
+					//var result = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><array>';
+
+					var xmlDoc = document.implementation.createDocument("","", null);
+					var array = xmlDoc.createElement("array");
+
+					xmlDoc.appendChild(array);
+
+					for(var i=0; i<title.length; i++)
+					{
+						var node = xmlDoc.createElement("dict");
+						
+						var key = xmlDoc.createElement("key");
+						key.textContent = "GRAPHIC_OVERLAY_NAME_KEY";						
+						node.appendChild(key);
+
+						var string = xmlDoc.createElement("string");
+						string.textContent = title[i].value;
+						node.appendChild(string);
+
+						var key1 = xmlDoc.createElement("key");
+						key1.textContent = "GRAPHIC_OVERLAY_INDEX_KEY";
+						node.appendChild(key1);
+						
+						var string1 = xmlDoc.createElement("string");
+						string1.textContent = (i+1);
+						node.appendChild(string1);
+
+						var key2 = xmlDoc.createElement("key");
+						key2.textContent = "GRAPHIC_OVERLAY_TYPE_KEY";
+						node.appendChild(key2);
+						
+						var string2 = xmlDoc.createElement("string");
+						string2.textContent = optionValue[i] ? "XYR" : "CORNER_PIN";
+						node.appendChild(string2);
+
+						var key3 = xmlDoc.createElement("key");
+						key3.textContent = "GRAPHIC_OVERLAY_KEYFRAMES_KEY";
+						node.appendChild(key3);
+
+						var subarray = xmlDoc.createElement("array");
+						if(optionValue[i])
+						{	
+							var transform = getTransformData(data[i].value);
+							var rotation = getRotationData(data[i].value);
+							for(var k=0; k<rotation.length; k++)
+							{
+								if(!isExistTransform(transform, rotation[k][0]))
+									transform.push(rotation[k]);
+							}
+							var transform = transform.sort(function(a, b){
+								var keyA = parseInt(a[0]),
+									keyB = parseInt(b[0]);
+								// Compare the 2 dates
+								if(keyA < keyB) return -1;
+								if(keyA > keyB) return 1;
+								return 0;
+							});
+							
+							
+							for(var k=0; k<transform.length; k++)
+							{
+								var subdict = xmlDoc.createElement("dict");
+
+								var subkey1 = xmlDoc.createElement("key");
+								subkey1.textContent = "KEYFRAME";
+								subdict.appendChild(subkey1);
+
+								var subkey2 = xmlDoc.createElement("real");
+								subkey2.textContent = parseInt(transform[k][0]) + 1;
+								subdict.appendChild(subkey2);
+
+								if(transform[k].length != 2) 
+								{
+									var subkey3 = xmlDoc.createElement("key");
+									subkey3.textContent = "POSITION_X";
+									subdict.appendChild(subkey3);
+
+									var subkey4 = xmlDoc.createElement("real");
+									subkey4.textContent = (typeof transform[k][1] != "undefined" ? transform[k][1] : "")
+									subdict.appendChild(subkey4);
+
+									var subkey5 = xmlDoc.createElement("key");
+									subkey5.textContent = "POSITION_Y";
+									subdict.appendChild(subkey5);
+
+									var subkey6 = xmlDoc.createElement("real");
+									subkey6.textContent = (typeof transform[k][2] != "undefined" ? transform[k][2] : "")
+									subdict.appendChild(subkey6);
+
+									var rvalue = getRotateIndex(rotation, transform[k][0]);
+									if(rvalue != "")
+									{
+										var subkey7 = xmlDoc.createElement("key");
+										subkey7.textContent = "ROTATION";
+										subdict.appendChild(subkey7);
+
+										var subkey8 = xmlDoc.createElement("real");
+										subkey8.textContent = rvalue;
+										subdict.appendChild(subkey8);
+									}
+								} else {
+									var subkey7 = xmlDoc.createElement("key");
+									subkey7.textContent = "ROTATION";
+									subdict.appendChild(subkey7);
+
+									var subkey8 = xmlDoc.createElement("real");
+									subkey8.textContent = transform[k][1];
+									subdict.appendChild(subkey8);
+								}
+								subarray.appendChild(subdict);							
+							}
+						} else {
+							var cornerData = getCornerData(data[i].value);
+							var idList = [];
+							for(var k=0; k<cornerData.length; k++)
+							{
+								for(var j=0; j<cornerData[k].length; j++)
+									if(idList.indexOf(cornerData[k][j][0]) == -1)
+										idList.push(cornerData[k][j][0])
+							}
+
+							idList = idList.sort(function(a, b){
+								var keyA = parseInt(a),
+									keyB = parseInt(b);
+								// Compare the 2 dates
+								if(keyA < keyB) return -1;
+								if(keyA > keyB) return 1;
+								return 0;
+							});
+
+
+							//if(cornerData.length == 4) {
+							//	for(var k=0; k<cornerData[0].length; k++)
+							for(var k=0; k<idList.length; k++)
+							{								
+								var subdict = xmlDoc.createElement("dict");
+
+								var subkey1 = xmlDoc.createElement("key");
+								subkey1.textContent = "KEYFRAME";
+								subdict.appendChild(subkey1);
+
+								var subkey2 = xmlDoc.createElement("real");
+								subkey2.textContent = parseInt(idList[k]) + 1;
+								subdict.appendChild(subkey2);
+
+								//Top Left
+								var topLeftItem = null;
+								if(typeof cornerData[0] != "undefined")
+								{
+									topLeftItem = getCornerSubData(cornerData[0],idList[k]);
+								}
+
+								if(topLeftItem != null)
+								{
+									var subkey3 = xmlDoc.createElement("key");
+									subkey3.textContent = "TOP_LEFT_POSITION_X";
+									subdict.appendChild(subkey3);
+
+									var subkey4 = xmlDoc.createElement("real");
+									subkey4.textContent = (typeof topLeftItem[1] != "undefined" ? topLeftItem[1] : "")
+									subdict.appendChild(subkey4);
+
+									var subkey5 = xmlDoc.createElement("key");
+									subkey5.textContent = "TOP_LEFT_POSITION_Y";
+									subdict.appendChild(subkey5);
+
+									var subkey6 = xmlDoc.createElement("real");
+									subkey6.textContent = (typeof topLeftItem[2] != "undefined" ? topLeftItem[2] : "")
+									subdict.appendChild(subkey6);
+								}
+
+								//Top Right
+								var topRightItem = null;
+								if(typeof cornerData[1] != "undefined")
+								{
+									topRightItem = getCornerSubData(cornerData[1],idList[k]);
+								}
+
+								if(topRightItem != null)
+								{
+									
+									var subkey7 = xmlDoc.createElement("key");
+									subkey7.textContent = "TOP_RIGHT_POSITION_X";
+									subdict.appendChild(subkey7);
+
+									var subkey8 = xmlDoc.createElement("real");
+									subkey8.textContent = (typeof topRightItem[1] != "undefined" ? topRightItem[1] : "")
+									subdict.appendChild(subkey8);
+
+									var subkey9 = xmlDoc.createElement("key");
+									subkey9.textContent = "TOP_RIGHT_POSITION_Y";
+									subdict.appendChild(subkey9);
+
+									var subkey10 = xmlDoc.createElement("real");
+									subkey10.textContent = (typeof topRightItem[2] != "undefined" ? topRightItem[2] : "")
+									subdict.appendChild(subkey10);
+								}
+
+
+								//Bottom left
+								var bottomLeftItem = null;
+								if(typeof cornerData[2] != "undefined")
+								{
+									bottomLeftItem = getCornerSubData(cornerData[2],idList[k]);
+								}
+
+								if(bottomLeftItem != null)
+								{
+									var subkey11 = xmlDoc.createElement("key");
+									subkey11.textContent = "BOTTOM_LEFT_POSITION_X";
+									subdict.appendChild(subkey11);
+
+									var subkey12 = xmlDoc.createElement("real");
+									subkey12.textContent = (typeof bottomLeftItem[1] != "undefined" ? bottomLeftItem[1] : "")
+									subdict.appendChild(subkey12);
+
+									var subkey13 = xmlDoc.createElement("key");
+									subkey13.textContent = "BOTTOM_LEFT_POSITION_Y";
+									subdict.appendChild(subkey13);
+
+									var subkey14 = xmlDoc.createElement("real");
+									subkey14.textContent = (typeof bottomLeftItem[2] != "undefined" ? bottomLeftItem[2] : "")
+									subdict.appendChild(subkey14);
+								}
+
+								//Bottom right
+								var bottomRightItem = null;
+								if(typeof cornerData[3] != "undefined")
+								{
+									bottomRightItem = getCornerSubData(cornerData[3],idList[k]);
+								}
+
+								if(bottomRightItem != null)
+								{
+									var subkey15 = xmlDoc.createElement("key");
+									subkey15.textContent = "BOTTOM_RIGHT_POSITION_X";
+									subdict.appendChild(subkey15);
+
+									var subkey16 = xmlDoc.createElement("real");
+									subkey16.textContent = (typeof bottomRightItem[1] != "undefined" ? bottomRightItem[1] : "")
+									subdict.appendChild(subkey16);
+
+									var subkey17 = xmlDoc.createElement("key");
+									subkey17.textContent = "BOTTOM_RIGHT_POSITION_Y";
+									subdict.appendChild(subkey17);
+
+									var subkey18 = xmlDoc.createElement("real");
+									subkey18.textContent = (typeof bottomRightItem[2] != "undefined" ? bottomRightItem[2] : "")
+									subdict.appendChild(subkey18);
+								}
+								// //offsetx
+								// var subkey19 = xmlDoc.createElement("key");
+								// subkey19.textContent = "OFFSETX";
+								// subdict.appendChild(subkey19);
+
+								// var subkey20 = xmlDoc.createElement("real");
+								// subkey20.textContent = (typeof cornerData[0][k][1] != "undefined" ? item[1] : "")
+								// subdict.appendChild(subkey20);
+
+								// //offsety
+								// var subkey21 = xmlDoc.createElement("key");
+								// subkey21.textContent = "OFFSETY";
+								// subdict.appendChild(subkey21);
+
+								// var subkey22 = xmlDoc.createElement("real");
+								// subkey22.textContent = (typeof cornerData[0][k][1] != "undefined" ? item[1] : "")
+								// subdict.appendChild(subkey22);
+
+								subarray.appendChild(subdict);	
+							}
+							
+						}
+						
+						node.appendChild(subarray);	
+						array.appendChild(node);
+						//result += '<dict>'
+					}
+					
+					var serializer = new XMLSerializer();
+					var xmlString = serializer.serializeToString(xmlDoc);
+
+					xmlString = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0">' + xmlString;
+					xmlString = xmlString + '</plist>'
+					
+					$('#finish-data').val(formatXml(xmlString));
+					//result += '</array></plist>';
+				})
+
+				var Page = (function() {
+
+					var $firstPageNextButton = $( '#first-next-btn' ),
+						$next = $('.nav-arrow-next'),
+						$prev = $('.nav-arrow-prev'),
+						$createPage = $('#create-page'),
+						$slid = $('.sl-slider'),
+
+						slitslider = $( '#slider' ).slitslider( {
+							keyboard: false
+						
+						} ),
+
+						init = function() {
+
+							initEvents();
+							
+						},
+						initEvents = function() {
+
+							// add navigation events
+							$firstPageNextButton.on( 'click', function() {
+
+								slitslider.next();
+								return false;
+
+							} );
+
+							$prev.on( 'click', function() {
+
+								slitslider.previous();
+								return false;
+
+							} );
+							$next.on( 'click', function() {
+
+								slitslider.next();
+								return false;
+
+							} );
+
+							$createPage.on('click', function() {
+								try
+								{
+									var count = $('#problem-count')[0].value;
+									count = parseInt(count);
+									if(isNaN(count)) {
+										alert("Please input count correctly");
+										return;
+									}
+									if(slitslider.slidesCount > 2){
+										
+										var counts = $('.sl-slide.bg-3.sl-slide-vertical').length
+										while(counts > 0)
+										{																				
+											var d = $('.sl-slide.bg-3.sl-slide-vertical')
+											d[0].parentNode.removeChild(d[0])					
+											counts--;										
+										}
+										var d = $('.sl-slide.bg-4.sl-slide-vertical')
+										d[0].parentNode.removeChild(d[0])		
+										slitslider.$slides = slitslider.$slides.slice(0,2);
+									}	
+
+									slitslider._setSize();
+									slitslider.slidesCount = 1;
+
+									optionValue = [];
+
+									for(var i=0; i<count; i++)
+									{
+										optionValue.push(true)
+										var $items  = $('<div class="sl-slide bg-3" data-orientation="vertical" data-slice1-rotation="-5" data-slice2-rotation="25" data-slice1-scale="2" data-slice2-scale="1">' +
+												'<div class="sl-slide-inner">' +
+													'<div class="problem-body">' +
+														'<div class="problem-title">' +
+															'<input type="button" value="Creating new plist"/>' +
+														'</div>' +
+														'<div class="body">' +
+															'<table>' +
+																'<tr height="50">' +
+																	'<td colspan="2" class="title">Overlay Graphic '+(i+1)+'</td>' +
+																'</tr>' +
+																'<tr height="50">' +
+																	'<td width="30%" class="title rlt">Name:</td>' +
+																	'<td>' +
+																		'<input type="text" value="" class="label"/>' +
+																	'</td>' +
+																'</tr>' +
+																'<tr height="100">' +
+																	'<td width="30%" class="title rlt">Type:</td>' +
+																	'<td>' +
+																		'<div class="radio">' +
+																			'<div>' +
+																				'<div><input id="gender_'+i+'" type="radio" name="gender_'+i+'" value="XYR" class="radio center" checked></div>' +
+																				'<div class="subtitle">XYR</div>' +
+																			'</div>' +
+																			'<div>' +
+																				'<div><input id="gender_'+i+'" type="radio" name="gender_'+i+'" value="CORNER PINNING" class="radio center"></div>' +
+																				'<div class="subtitle">CORNER PINNING</div>' +
+																			'</div>' +
+																		'</div>' +														
+																	'</td>' +
+																'</tr>' +
+																'<tr>' +
+																	'<td width="30%" class="rlt title">Data:</td>' +
+																	'<td>' +
+																		'<textarea class="textarea"></textarea>' +
+																	'</td>' +
+																'</tr>' +
+															'</table>' +
+														'</div>' +
+														
+														'<div class="footer">' +
+															'<div class="prev nav-arrow-prev">' +
+																'<input type="button" value="Back" class="button prev_button"/>' +
+															'</div>' +
+															'<div class="prev nav-arrow-next">' +
+																'<input type="button" value="Next" class="button next_button"/>' +
+															'</div>' +
+														'</div>' +
+													'</div>' +
+												'</div>' +
+											'</div>');
+										slitslider.add($items);
+									}
+
+									var $tmp  = $('<div class="sl-slide bg-4" data-orientation="vertical" data-slice1-rotation="-5" data-slice2-rotation="25" data-slice1-scale="2" data-slice2-scale="1">' + 
+										'<div class="sl-slide-inner">' + 
+											'<div class="problem-body">' + 
+												'<div class="problem-title">' + 
+													'<input type="button" value="Creating new plist"/>' + 
+												'</div>' + 
+												'<div class="body">' + 
+													'<table>' + 																				
+														'<tr>' + 
+															'<td width="20%" class="rlt title">Finished Data:</td>' + 
+															'<td>' + 
+																'<textarea class="textarea" id="finish-data" style="font-size:12px;">' + '</textarea>' + 
+															'</td>' + 
+														'</tr>' + 
+													'</table>' + 
+												'</div>' + 
+												
+												'<div class="footer">' + 
+													'<div class="prev nav-arrow-prev">' + 
+														'<input type="button" value="Back" class="button prev_button"/>' + 
+													'</div>' + 
+													'<div class="save-as" id="save-as">' + 
+														'<input type="button" value="Save As" class="button save_as"/>' + 
+													'</div>' + 
+												'</div>' + 
+											'</div>' + 
+										'</div>' + 
+									'</div>') ;
+									
+									slitslider.add($tmp);
+
+									$next = $('.next_button'),
+									$prev = $('.prev_button'),
+									$save = $('.save_as'),
+									$prev.on( 'click', function() {
+										var options = $('input.radio.center');
+										if(slitslider.current <= slitslider.slidesCount - 2) 
+											optionValue[slitslider.current - 2] = options[(slitslider.current - 2) * 2].checked
+
+										
+										if(slitslider.current > 2) {
+
+											var fff = slitslider.current - 3;
+											setTimeout(()=> {
+												options[fff * 2].checked = optionValue[fff];
+												options[fff * 2 + 1].checked = !optionValue[fff];
+											},50);
+										}
+
+										slitslider.previous();
+										return false;
+									} );
+									$next.on( 'click', function() {
+										var title = $('.sl-slide.bg-3.sl-slide-vertical .body input.label');
+										if(title[slitslider.current - 2].value == "")
+										{
+											alert("Please enter a name");
+											return;
+										}
+										var options = $('input.radio.center');
+										if(slitslider.current <= slitslider.slidesCount - 2) {
+											optionValue[slitslider.current - 2] = options[(slitslider.current - 2) * 2].checked									
+										}
+										if(slitslider.current < slitslider.slidesCount - 2) {
+											options[(slitslider.current - 1) * 2].checked = optionValue[slitslider.current - 1];
+											options[(slitslider.current - 1) * 2 + 1].checked = !optionValue[slitslider.current - 1];
+										}
+										if(slitslider.current == (slitslider.slidesCount - 2))
+										{
+											getResult();
+										}
+										
+										slitslider.next();
+										return false;
+									} );
+									$save.on( 'click', function() {
+										var value = $('#finish-data').val();
+										download("DATA_OVERLAY_GRAPHICS.plist",value);
+									});
+									
+									slitslider.next();
+									return false;
+								}
+								catch (err)
+								{
+									alert("Please input the count correctly!");
+								}
+								
+									
+							})
+							
+						};
+						return { init : init };
+				})();
+
+				Page.init();
+
+				/**
+				 * Notes: 
+				 * 
+				 * example how to add items:
+				 */
+								
+				/*var $items  = $('<div class="sl-slide sl-slide-color-2" data-orientation="horizontal" data-slice1-rotation="-5" data-slice2-rotation="10" data-slice1-scale="2" data-slice2-scale="1"><div class="sl-slide-inner bg-1"><div class="sl-deco" data-icon="t"></div><h2>some text</h2><blockquote><p>bla bla</p><cite>Margi Clarke</cite></blockquote></div></div>');
+				
+				// call the plugin's add method
+				ss.add($items);*/						
+			});
+		</script>
+	</body>
+</html>
